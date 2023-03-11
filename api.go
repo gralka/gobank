@@ -43,6 +43,7 @@ func NewAPIServer(listenAddr string) *APIServer {
 func (s *APIServer) Run() {
   router := mux.NewRouter()
 
+  router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.handleAccount));
   router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount));
 
   log.Println("JSON API Service Running on port: ", s.listenAddr)
@@ -51,23 +52,28 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
-  if r.Method == "GET" {
+  switch r.Method {
+  case "GET":
     return s.handleGetAccount(w, r)
-  }
-
-  if r.Method == "POST" {
+  case "POST":
     return s.handleCreateAccount(w, r)
-  }
-  
-  if r.Method == "DELETE" {
+  case "DELETE":
     return s.handleDeleteAccount(w, r)
+  default:
+    return fmt.Errorf("method not allowed %s", r.Method)
   }
-
-  return fmt.Errorf("method not allowed %s", r.Method) 
 }
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-  return nil
+  id := mux.Vars(r)["id"]
+
+  // if _, ok := vars["id"]; ok {
+    // return WriteJSON(w, http.StatusOK, vars)
+  // }
+  fmt.Println(id)
+
+  // return WriteJSON(w, http.StatusOK, []string{"account1", "account2"})
+  return WriteJSON(w, http.StatusOK, Account{})
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
