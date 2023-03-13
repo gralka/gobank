@@ -84,9 +84,9 @@ func (s *PostgressStore) CreateAccount(a *Account) error {
 }
 
 func (s *PostgressStore) DeleteAccount(id int) error {
-  // query := "DELETE FROM accounts WHERE id = $1"
-  // _, err := s.db.Exec(query, id)
-  return nil 
+  _, err := s.db.Query("DELETE FROM accounts WHERE id = $1", id)
+
+  return err 
 }
 
 func (s *PostgressStore) UpdateAccount(account *Account) error {
@@ -96,16 +96,17 @@ func (s *PostgressStore) UpdateAccount(account *Account) error {
 }
 
 func (s *PostgressStore) GetAccountByID(id int) (*Account, error) {
-  // query := "SELECT id, name, balance FROM accounts WHERE id = $1"
-  // row := s.db.QueryRow(query, id)
+  rows, err := s.db.Query("SELECT * FROM accounts WHERE id = $1", id)
 
-  account := &Account{}
-  // err := row.Scan(&account.ID, &account.Name, &account.Balance)
-  // if err != nil {
-  //   return nil, err
-  // }
+  if err != nil {
+    return nil, err
+  }
 
-  return account, nil
+  for rows.Next() {
+    return scanIntoAccount(rows)
+  }
+
+  return nil, fmt.Errorf("account with id %d not found", id)
 }
 
 func (s *PostgressStore) GetAccounts() ([]*Account, error) {
