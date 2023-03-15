@@ -25,3 +25,9 @@ type CreateAccountRequest struct {
   FirstName string `json:"first_name"`
   LastName  string `json:"last_name"`
 }
+
+type CreateTransferRequest struct {
+  FromAccountID int `json:"from_account_id"`
+  ToAccountID   int `json:"to_account_id"`
+  Amount        int `json:"amount"`
+}
