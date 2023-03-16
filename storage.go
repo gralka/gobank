@@ -8,7 +8,7 @@ import (
 )
  
 type Storage interface {
-  CreateAccount(account *Account) error
+  CreateAccount(account *Account) (*Account, error)
   DeleteAccount(id int) error
   UpdateAccount(account *Account) error
   GetAccounts() ([]*Account, error)
@@ -59,28 +59,32 @@ func (s *PostgressStore) createAccountTable() error {
   return err
 }
 
-func (s *PostgressStore) CreateAccount(a *Account) error {
+func (s *PostgressStore) CreateAccount(a *Account) (*Account, error) {
   query := `INSERT INTO accounts (
       first_name,
       last_name,
       balance,
       created_at
-    ) VALUES ($1, $2, $3, $4)`
+    ) VALUES ($1, $2, $3, $4) RETURNING id, number`
 
-  resp, err := s.db.Query(
+  var id int64
+  var number int64
+  err := s.db.QueryRow(
      query,
      a.FirstName,
      a.LastName,
      a.Balance,
      a.CreatedAt,
-  )
+  ).Scan(&id, &number)
 
   if err != nil {
-    return err
+    return &Account{}, err
   }
 
-  fmt.Printf("resp: %v+\n", resp)
-  return nil
+  a.ID = int(id)
+  a.Number = int(number)
+
+  return a, nil
 }
 
 func (s *PostgressStore) DeleteAccount(id int) error {
