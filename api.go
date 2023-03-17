@@ -27,8 +27,8 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
   router := mux.NewRouter()
 
-  router.HandleFunc("/accounts/{id}", makeHTTPHandleFunc(s.handleGetAccountByID));
-  router.HandleFunc("/accounts", withJWTAuth(makeHTTPHandleFunc(s.handleAccount)));
+  router.HandleFunc("/accounts/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID)));
+  router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccount));
   router.HandleFunc("/transfers", makeHTTPHandleFunc(s.handleTransfer));
 
   log.Println("JSON API Service Running on port: ", s.listenAddr)
@@ -91,9 +91,20 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 
   account := NewAccount(createAccountReq.FirstName, createAccountReq.LastName)
 
-  if err := s.store.CreateAccount(account); err != nil {
+  newAccount, err := s.store.CreateAccount(account)
+
+  if err != nil {
     return err
   }
+
+  tokenString, err := createJWT(newAccount)
+
+  if err != nil {
+    return err
+  }
+
+
+  fmt.Println("tokenString: ", tokenString)
 
   return WriteJSON(w, http.StatusCreated, account) 
 }
@@ -137,10 +148,26 @@ func WriteJSON(w http.ResponseWriter, status int, value any) error {
 
 func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
   return func (w http.ResponseWriter, r *http.Request) {
-    tokenString := r.Header.Get("x-jwt-token")
-    _, err := validateJWT(tokenString)
+    id, err := getID(r)
 
     if err != nil {
+      WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
+      return
+    }
+
+    tokenString := r.Header.Get("x-jwt-token")
+
+    token, err := validateJWT(tokenString)
+
+    if err != nil || !token.Valid {
+      WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
+      return
+    }
+
+    claims := token.Claims.(jwt.MapClaims)
+    claimAccountNumber := int(claims["accountNumber"].(float64))
+
+    if claimAccountNumber != id {
       WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
       return
     }
@@ -149,6 +176,17 @@ func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
   }
 }
 
+func createJWT(account *Account) (string, error) {
+  claims := &jwt.MapClaims{
+    "accountNumber": account.Number,
+  }
+
+  secret := os.Getenv("JWT_SECRET")
+  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+  return token.SignedString([]byte(secret))
+}
+  
 func validateJWT(tokenString string) (*jwt.Token, error) {
   secret := os.Getenv("JWT_SECRET")
 
@@ -159,7 +197,6 @@ func validateJWT(tokenString string) (*jwt.Token, error) {
 
     return []byte(secret), nil
   })
-
 }
 
 type apiFunc func (http.ResponseWriter, *http.Request) error
