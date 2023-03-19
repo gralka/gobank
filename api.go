@@ -27,7 +27,7 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
   router := mux.NewRouter()
 
-  router.HandleFunc("/accounts/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID)));
+  router.HandleFunc("/accounts/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID), s.store));
   router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccount));
   router.HandleFunc("/transfers", makeHTTPHandleFunc(s.handleTransfer));
 
@@ -146,29 +146,39 @@ func WriteJSON(w http.ResponseWriter, status int, value any) error {
   return json.NewEncoder(w).Encode(value)
 }
 
-func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
+func permissionDenied(w http.ResponseWriter) {
+  WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "permission denied"})
+}
+
+func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
   return func (w http.ResponseWriter, r *http.Request) {
-    id, err := getID(r)
-
-    if err != nil {
-      WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
-      return
-    }
-
     tokenString := r.Header.Get("x-jwt-token")
 
     token, err := validateJWT(tokenString)
 
     if err != nil || !token.Valid {
-      WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
+      permissionDenied(w)
+      return
+    }
+
+    id, err := getID(r)
+
+    if err != nil {
+      permissionDenied(w)
+      return
+    }
+
+    account, err := s.GetAccountByID(id)
+
+    if err != nil {
+      permissionDenied(w)
       return
     }
 
     claims := token.Claims.(jwt.MapClaims)
-    claimAccountNumber := int(claims["accountNumber"].(float64))
 
-    if claimAccountNumber != id {
-      WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "invalid token"})
+    if account.Number != int(claims["accountNumber"].(float64)) {
+      permissionDenied(w)
       return
     }
 
