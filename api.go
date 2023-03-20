@@ -27,6 +27,7 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
   router := mux.NewRouter()
 
+  router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
   router.HandleFunc("/accounts/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID), s.store));
   router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccount));
   router.HandleFunc("/transfers", makeHTTPHandleFunc(s.handleTransfer));
@@ -34,6 +35,16 @@ func (s *APIServer) Run() {
   log.Println("JSON API Service Running on port: ", s.listenAddr)
 
   http.ListenAndServe(s.listenAddr, router)
+}
+
+func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
+  var req LoginRequest
+
+  if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+    return err
+  }
+
+  return WriteJSON(w, http.StatusOK, req) 
 }
 
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
@@ -103,7 +114,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
     return err
   }
 
-
+  // TODO: Store the JWT token securely in a HTTP-only cookie or encrypted session store to prevent sensitive data exposure, or something to that effect.
   fmt.Println("tokenString: ", tokenString)
 
   return WriteJSON(w, http.StatusCreated, account) 
@@ -128,7 +139,7 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
     return fmt.Errorf("method not allowed %s", r.Method)
   }
 
-  transferReq := new(CreateTransferRequest)
+  transferReq := new(TransferRequest)
 
   if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
     return err

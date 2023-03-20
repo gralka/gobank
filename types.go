@@ -26,8 +26,13 @@ type CreateAccountRequest struct {
   LastName  string `json:"last_name"`
 }
 
-type CreateTransferRequest struct {
+type TransferRequest struct {
   FromAccountID int `json:"from_account_id"`
   ToAccountID   int `json:"to_account_id"`
   Amount        int `json:"amount"`
+}
+
+type LoginRequest struct {
+  Number   int64  `json:"number"`
+  Password string `json:"password"`
 }
