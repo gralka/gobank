@@ -30,18 +30,41 @@ func (s *PostgressStore) Init() error {
 
 func NewPostgressStore() (*PostgressStore, error) {
   driverEnvVar := os.Getenv("DB_DRIVER")
-  hostEnvVar := os.Getenv("DB_HOST")
-  userEnvVar := os.Getenv("DB_USER")
-  passwordEnvVar := os.Getenv("DB_PASSWORD")
-  dbNameEnvVar := os.Getenv("DB_NAME")
-  sslModeEnvVar := os.Getenv("DB_SSLMODE")
-
 
   if driverEnvVar == "" {
     return nil, fmt.Errorf("DB_DRIVER not set")
   }
 
-  // connStr := "user=postgres dbname=postgres password=gobank sslmode=disable"
+  hostEnvVar := os.Getenv("DB_HOST")
+
+  if hostEnvVar == "" {
+    return nil, fmt.Errorf("DB_HOST not set")
+  }
+
+  userEnvVar := os.Getenv("DB_USER")
+
+  if userEnvVar == "" {
+    return nil, fmt.Errorf("DB_USER not set")
+  }
+
+  passwordEnvVar := os.Getenv("DB_PASSWORD")
+
+  if passwordEnvVar == "" {
+    return nil, fmt.Errorf("DB_PASSWORD not set")
+  }
+
+  dbNameEnvVar := os.Getenv("DB_NAME")
+
+  if dbNameEnvVar == "" {
+    return nil, fmt.Errorf("DB_NAME not set")
+  }
+
+  sslModeEnvVar := os.Getenv("DB_SSLMODE")
+
+  if sslModeEnvVar == "" {
+    return nil, fmt.Errorf("DB_SSLMODE not set")
+  }
+
   connStr := fmt.Sprintf(
     "host=%s user=%s password=%s dbname=%s sslmode=%s",
     hostEnvVar,
