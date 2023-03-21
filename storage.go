@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -28,8 +29,29 @@ func (s *PostgressStore) Init() error {
 }
 
 func NewPostgressStore() (*PostgressStore, error) {
-  connStr := "user=postgres dbname=postgres password=gobank sslmode=disable"
-  db, err := sql.Open("postgres", connStr)
+  driverEnvVar := os.Getenv("DB_DRIVER")
+  hostEnvVar := os.Getenv("DB_HOST")
+  userEnvVar := os.Getenv("DB_USER")
+  passwordEnvVar := os.Getenv("DB_PASSWORD")
+  dbNameEnvVar := os.Getenv("DB_NAME")
+  sslModeEnvVar := os.Getenv("DB_SSLMODE")
+
+
+  if driverEnvVar == "" {
+    return nil, fmt.Errorf("DB_DRIVER not set")
+  }
+
+  // connStr := "user=postgres dbname=postgres password=gobank sslmode=disable"
+  connStr := fmt.Sprintf(
+    "host=%s user=%s password=%s dbname=%s sslmode=%s",
+    hostEnvVar,
+    userEnvVar,
+    passwordEnvVar,
+    dbNameEnvVar,
+    sslModeEnvVar,
+  )
+
+  db, err := sql.Open(driverEnvVar, connStr)
 
   if err != nil {
     return nil, err
@@ -69,6 +91,7 @@ func (s *PostgressStore) CreateAccount(a *Account) (*Account, error) {
 
   var id int64
   var number int64
+
   err := s.db.QueryRow(
      query,
      a.FirstName,
