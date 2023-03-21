@@ -92,15 +92,19 @@ func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
-  createAccountReq := new(CreateAccountRequest)
+  req := new(CreateAccountRequest)
 
-  if err := json.NewDecoder(r.Body).Decode(createAccountReq); err != nil {
+  if err := json.NewDecoder(r.Body).Decode(req); err != nil {
     return err
   }
 
   r.Body.Close()
 
-  account := NewAccount(createAccountReq.FirstName, createAccountReq.LastName)
+  account, err := NewAccount(req.FirstName, req.LastName, req.Password)
+
+  if err != nil {
+    return err
+  }
 
   newAccount, err := s.store.CreateAccount(account)
 
@@ -108,16 +112,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
     return err
   }
 
-  tokenString, err := createJWT(newAccount)
-
-  if err != nil {
-    return err
-  }
-
-  // TODO: Store the JWT token securely in a HTTP-only cookie or encrypted session store to prevent sensitive data exposure, or something to that effect.
-  fmt.Println("tokenString: ", tokenString)
-
-  return WriteJSON(w, http.StatusCreated, account) 
+  return WriteJSON(w, http.StatusCreated, newAccount) 
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
