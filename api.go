@@ -219,6 +219,11 @@ func createJWT(account *Account) (string, error) {
   }
 
   secret := os.Getenv("JWT_SECRET")
+
+  if secret == "" {
+    return "", fmt.Errorf("JWT_SECRET is not set")
+  }
+
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
   return token.SignedString([]byte(secret))
@@ -227,10 +232,15 @@ func createJWT(account *Account) (string, error) {
 func validateJWT(tokenString string) (*jwt.Token, error) {
   secret := os.Getenv("JWT_SECRET")
 
+  if secret == "" {
+    return nil, fmt.Errorf("JWT_SECRET is not set")
+  }
+
   return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
     if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
       return nil, fmt.Errorf( "Unexpected signing method: %v", token.Header["alg"])
     }
+
 
     return []byte(secret), nil
   })
