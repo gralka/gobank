@@ -16,6 +16,10 @@ type Account struct {
   CreatedAt         time.Time `json:"created_at"`
 }
 
+type LoginResponse struct {
+  Token string `json:"token"`
+}
+
 func NewAccount (
   firstName string,
   lastName string,

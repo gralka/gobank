@@ -10,6 +10,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type APIServer struct {
@@ -54,9 +55,17 @@ func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
     return err
   }
 
-  fmt.Printf("%+v\n", acc)
+  if err := validatePassword(req.Password, acc.EncryptedPassword); err != nil { 
+    return WriteJSON(w, http.StatusForbidden, ApiError{Error: err.Error()})
+  }
 
-  return WriteJSON(w, http.StatusOK, req) 
+  token, err := createJWT(acc)
+
+  if err != nil {
+    return err
+  }
+
+  return WriteJSON(w, http.StatusOK, LoginResponse{Token: token})
 }
 
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
@@ -251,4 +260,14 @@ func getID(r *http.Request) (int, error) {
   }
 
   return id, nil
+}
+
+func validatePassword(password string, encryptedPassword string) error {
+  err := bcrypt.CompareHashAndPassword([]byte(encryptedPassword), []byte(password))
+
+  if err != nil {
+    return fmt.Errorf("invalid password")
+  }
+
+  return nil
 }
