@@ -24,7 +24,7 @@ func main() {
   if err := store.Init(); err != nil { log.Fatal(err) }
 
   if *seed {
-    fmt.Println("Seeding the database")
+    fmt.Println("Seeding the accounts table...")
 
     seedAccounts(store)
   }

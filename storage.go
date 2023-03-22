@@ -95,6 +95,7 @@ func (s *PostgressStore) createAccountTable() error {
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
+    encrypted_password VARCHAR(100),
     number SERIAL,
     balance INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -109,9 +110,10 @@ func (s *PostgressStore) CreateAccount(a *Account) (*Account, error) {
   query := `INSERT INTO accounts (
       first_name,
       last_name,
+      encrypted_password,
       balance,
       created_at
-    ) VALUES ($1, $2, $3, $4) RETURNING id, number`
+    ) VALUES ($1, $2, $3, $4, $5) RETURNING id, number`
 
   var id int64
   var number int64
@@ -120,6 +122,7 @@ func (s *PostgressStore) CreateAccount(a *Account) (*Account, error) {
      query,
      a.FirstName,
      a.LastName,
+     a.EncryptedPassword,
      a.Balance,
      a.CreatedAt,
   ).Scan(&id, &number)
