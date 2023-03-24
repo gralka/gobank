@@ -128,7 +128,7 @@ func (s *PostgressStore) CreateAccount(a *Account) (*Account, error) {
   ).Scan(&id, &number)
 
   if err != nil {
-    return &Account{}, err
+    return nil, err
   }
 
   a.ID = int(id)
