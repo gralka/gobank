@@ -49,6 +49,8 @@ func loadDotEnv() error {
 func seedAccounts(store Storage) {
   seedAccount(store, "John", "Doe", "password")
   seedAccount(store, "Jane", "Doe", "password")
+  seedAccount(store, "Joe", "Smith", "password")
+  seedAccount(store, "Henry", "Quinn", "password")
 }
 
 func seedAccount(store Storage, fname string, lname string, pw string) *Account {
